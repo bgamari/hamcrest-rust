@@ -51,10 +51,20 @@ pub fn existing_dir() -> ExistingPath {
 #[cfg(test)]
 mod test {
   use std::os;
+  use {assert_that,is,is_not,existing_file,existing_dir,existing_path};
 
   #[test]
   fn test_stuff() {
-    println!("env: {}", os::getenv("FOO"));
-    fail!("not implemented");
+    match path(os::getenv("TEST_EXISTS_FILE")) {
+      Some(path) => {
+        assert_that(path.clone(), is(existing_file()));
+        assert_that(path.clone(), is_not(existing_dir()));
+      }
+      None => ()
+    }
+  }
+
+  fn path(path: Option<~str>) -> Option<Path> {
+    path.map(|p| Path::new(p))
   }
 }

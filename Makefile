@@ -16,7 +16,9 @@ hamcrest-test: $(SRC)
 	$(RUSTC) --test -o hamcrest-test src/hamcrest/lib.rs
 
 test: hamcrest-test
-	FOO=bar
+	TEST_EXISTS_FILE=README.md \
+	TEST_EXISTS_DIR=target \
+	TEST_EXISTS_NONE=zomg.txt \
 	./hamcrest-test
 
 clean:
