@@ -29,8 +29,8 @@ impl<'a, T> Matcher<&'a Vec<T>> for OfLen {
   }
 }
 
-pub fn of_len(len: uint) -> OfLen {
-  OfLen { len: len }
+pub fn of_len(len: uint) -> ~OfLen {
+  ~OfLen { len: len }
 }
 
 #[deriving(Clone)]
@@ -60,6 +60,6 @@ impl<'a, T : Show> Matcher<&'a Vec<T>> for Contains<T> {
   }
 }
 
-pub fn contains<T>(items: Vec<T>) -> Contains<T> {
-  Contains { items: items }
+pub fn contains<T>(items: Vec<T>) -> ~Contains<T> {
+  ~Contains { items: items }
 }
