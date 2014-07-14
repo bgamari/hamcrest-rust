@@ -1,35 +1,35 @@
 use std::fmt::Show;
 use std::vec::Vec;
+use core::{Success, Failure, BaseMatcher, expect};
 use {
-  success,
-  Matcher,
-  MatchResult,
-  SelfDescribing};
+    Matcher,
+    Match,
+    mismatch,
+};
 
 #[deriving(Clone)]
 pub struct OfLen {
-  len: uint
+    len: uint
 }
 
-impl SelfDescribing for OfLen {
-  fn describe(&self) -> String {
-    format!("of len {}", self.len)
-  }
+impl<T> BaseMatcher<Vec<T>> for OfLen {
+    fn description(&self) -> &'static str {
+        "of len"
+    }
 }
 
-impl<'a, T> Matcher<&'a Vec<T>> for OfLen {
-  fn matches(&self, actual: &Vec<T>) -> MatchResult {
-    if self.len == actual.len() {
-      success()
+impl<T> Matcher<Vec<T>> for OfLen {
+    fn matches(&self, actual: &Vec<T>) -> Match {
+        let failure: String = mismatch(
+            format!("it had {} elements", actual.len()),
+            format!("a vec of length {}", self.len));
+
+        expect(self.len == actual.len(), failure)
     }
-    else {
-      Err(format!("was len {}", actual.len()))
-    }
-  }
 }
 
 pub fn of_len(len: uint) -> Box<OfLen> {
-  box OfLen { len: len }
+    box OfLen { len: len }
 }
 
 #[deriving(Clone)]
@@ -45,37 +45,33 @@ impl<T> Contains<T> {
     }
 }
 
-impl<T : Show> SelfDescribing for Contains<T> {
-    fn describe(&self) -> String {
-        if self.exactly {
-            format!("containing exactly {}", self.items)
-        } else {
-            format!("containing {}", self.items)
-        }
+impl<T: Show + PartialEq + Clone> BaseMatcher<Vec<T>> for Contains<T> {
+    fn description(&self) -> &'static str {
+        "contains"
     }
 }
 
-impl<'a, T : Show + PartialEq + Clone> Matcher<&'a Vec<T>> for Contains<T> {
-  fn matches(&self, actual: &Vec<T>) -> MatchResult {
-    let mut rem = actual.clone();
+impl<T : Show + PartialEq + Clone> Matcher<Vec<T>> for Contains<T> {
+    fn matches(&self, actual: &Vec<T>) -> Match {
+        let mut rem = actual.clone();
 
-    for item in self.items.iter() {
-        match rem.iter().position(|a| *item == *a) {
-            Some(idx) => { rem.remove(idx); },
-            None => return Err(format!("was {}", actual))
+        for item in self.items.iter() {
+            match rem.iter().position(|a| *item == *a) {
+                Some(idx) => { rem.remove(idx); },
+                None => return Failure(format!("was {}", actual))
+            }
         }
-    }
 
-    if self.exactly && !rem.is_empty() {
-        return Err(format!("also had {}", rem));
-    }
+        if self.exactly && !rem.is_empty() {
+            return Failure(format!("also had {}", rem));
+        }
 
-    success()
-  }
+        Success
+    }
 }
 
 pub fn contains<T>(items: Vec<T>) -> Box<Contains<T>> {
-  box Contains { items: items, exactly: false }
+    box Contains { items: items, exactly: false }
 }
 
 #[cfg(test)]

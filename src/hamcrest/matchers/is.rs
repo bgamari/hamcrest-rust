@@ -1,44 +1,53 @@
-use {Matcher,MatchResult,SelfDescribing};
+use {Match, Matcher, BaseMatcher};
+use core::{Success, Failure};
 
-pub struct Is<T, M> {
-  matcher: Box<M>
+pub struct Is<M> {
+    matcher: Box<M>
 }
 
-impl<T, M : Matcher<T>> SelfDescribing for Is<T, M> {
-  fn describe(&self) -> String {
-    self.matcher.describe()
-  }
-}
-
-impl<T, M : Matcher<T>> Matcher<T> for Is<T, M> {
-  fn matches(&self, actual: T) -> MatchResult {
-    self.matcher.matches(actual)
-  }
-}
-
-pub fn is<T, M: Matcher<T>>(matcher: Box<M>) -> Box<Is<T, M>> {
-  box Is { matcher: matcher }
-}
-
-pub struct IsNot<T, M> {
-  matcher: Box<M>
-}
-
-impl<T, M : Matcher<T>> SelfDescribing for IsNot<T, M> {
-  fn describe(&self) -> String {
-    format!("not {}", self.matcher.describe())
-  }
-}
-
-impl<T, M : Matcher<T>> Matcher<T> for IsNot<T, M> {
-  fn matches(&self, actual: T) -> MatchResult {
-    match self.matcher.matches(actual) {
-      Ok(_) => Err("matched".to_string()),
-      Err(_) => Ok(())
+impl<T, M: Matcher<T>> BaseMatcher<T> for Is<M> {
+    fn description(&self) -> &'static str {
+        self.matcher.description()
     }
-  }
 }
 
-pub fn is_not<T, M: Matcher<T>>(matcher: Box<M>) -> Box<IsNot<T, M>> {
-  box IsNot { matcher: matcher }
+impl<T, M: Matcher<T>> Matcher<T> for Is<M> {
+    fn matches(&self, actual: &T) -> Match {
+        self.matcher.matches(actual)
+    }
+
+    fn failure_message_when_negated(&self) -> String {
+        self.matcher.failure_message_when_negated()
+    }
+}
+
+pub fn is<T, M: Matcher<T>>(matcher: Box<M>) -> Box<Is<M>> {
+    box Is { matcher: matcher }
+}
+
+pub struct IsNot<M> {
+    matcher: Box<M>
+}
+
+impl<T, M: Matcher<T>> BaseMatcher<T> for IsNot<M> {
+    fn description(&self) -> &'static str {
+        self.matcher.description()
+    }
+}
+
+impl<T, M: Matcher<T>> Matcher<T> for IsNot<M> {
+    fn matches(&self, actual: &T) -> Match {
+        match self.matcher.matches(actual) {
+            Success => Failure(self.matcher.failure_message_when_negated()),
+            Failure(_) => Success
+        }
+    }
+
+    fn failure_message_when_negated(&self) -> String {
+        fail!("Do not negate an is_not")
+    }
+}
+
+pub fn is_not<T, M: Matcher<T>>(matcher: Box<M>) -> Box<IsNot<M>> {
+    box IsNot { matcher: matcher }
 }

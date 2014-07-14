@@ -1,83 +1,97 @@
-use {success,expect,Matcher,MatchResult,SelfDescribing};
+use {Matcher, Match, expect};
 
+#[deriving(Show)]
 pub enum PathType {
-  AnyType,
-  File,
-  Dir
+    AnyType,
+    File,
+    Dir
 }
 
-pub struct ExistingPath {
-  path_type: PathType
+impl PathType {
+    fn was_not(&self, actual: &Path) -> String {
+        format!("{} is not {}", actual.display(), self.describe())
+    }
+
+    fn describe(&self) -> String {
+        match *self {
+            File => format!("a file"),
+            Dir => format!("a directory"),
+            AnyType => format!("any kind of file")
+        }
+    }
 }
+
+define_matcher!(ExistingPath for Path as "existing path" {
+    expected: PathType
+})
 
 impl ExistingPath {
-  fn match_path_type(&self, actual: &Path) -> MatchResult {
-    match self.path_type {
-      File => expect(actual.is_file(), format!("`{}` was not a file", actual.display())),
-      Dir => expect(actual.is_dir(), format!("`{}` was not a dir", actual.display())),
-      _ => success()
+    fn match_path_type(&self, actual: &Path) -> Match {
+        let message = self.expected.was_not(actual);
+
+        match self.expected {
+            File => expect(actual.is_file(), message),
+            Dir => expect(actual.is_dir(), message),
+            AnyType => expect(actual.exists(), message)
+        }
     }
-  }
 }
 
-impl SelfDescribing for ExistingPath {
-  fn describe(&self) -> String {
-    "an existing file".to_string()
-  }
-}
+impl Matcher<Path> for ExistingPath {
+    fn matches(&self, actual: &Path) -> Match {
+        self.match_path_type(actual)
+    }
 
-impl<'a> Matcher<&'a Path> for ExistingPath {
-  fn matches(&self, actual: &Path) -> MatchResult {
-    expect(actual.exists(), format!("{} was missing", actual.display()))
-      .and(self.match_path_type(actual))
-  }
+    fn failure_message_when_negated(&self) -> String {
+        format!("Expected not {}", self.expected.describe())
+    }
 }
 
 pub fn existing_path() -> Box<ExistingPath> {
-  box ExistingPath { path_type: AnyType }
+    box ExistingPath { expected: AnyType }
 }
 
 pub fn existing_file() -> Box<ExistingPath> {
-  box ExistingPath { path_type: File }
+    box ExistingPath { expected: File }
 }
 
 pub fn existing_dir() -> Box<ExistingPath> {
-  box ExistingPath { path_type: Dir }
+    box ExistingPath { expected: Dir }
 }
 
 #[cfg(test)]
 mod test {
-  use std::os;
-  use {assert_that,is,is_not,existing_file,existing_dir,existing_path};
+    use std::os;
+    use {assert_that,is,is_not,existing_file,existing_dir,existing_path};
 
-  #[test]
-  fn test_with_existing_file() {
-    let path = path(os::getenv("TEST_EXISTS_FILE"), "./README.md");
+    #[test]
+    fn test_with_existing_file() {
+        let path = path(os::getenv("TEST_EXISTS_FILE"), "./README.md");
 
-    assert_that(&path, is(existing_path()));
-    assert_that(&path, is(existing_file()));
-    assert_that(&path, is_not(existing_dir()));
-  }
+        assert_that(&path, is(existing_path()));
+        assert_that(&path, is(existing_file()));
+        assert_that(&path, is_not(existing_dir()));
+    }
 
-  #[test]
-  fn test_with_existing_dir() {
-    let path = path(os::getenv("TEST_EXISTS_DIR"), "./target");
+    #[test]
+    fn test_with_existing_dir() {
+        let path = path(os::getenv("TEST_EXISTS_DIR"), "./target");
 
-    assert_that(&path, is(existing_path()));
-    assert_that(&path, is(existing_dir()));
-    assert_that(&path, is_not(existing_file()));
-  }
+        assert_that(&path, is(existing_path()));
+        assert_that(&path, is(existing_dir()));
+        assert_that(&path, is_not(existing_file()));
+    }
 
-  #[test]
-  fn test_with_nonexisting_path() {
-    let path = path(os::getenv("TEST_EXISTS_NONE"), "./zomg.txt");
+    #[test]
+    fn test_with_nonexisting_path() {
+        let path = path(os::getenv("TEST_EXISTS_NONE"), "./zomg.txt");
 
-    assert_that(&path, is_not(existing_path()));
-    assert_that(&path, is_not(existing_file()));
-    assert_that(&path, is_not(existing_dir()));
-  }
+        assert_that(&path, is_not(existing_path()));
+        assert_that(&path, is_not(existing_file()));
+        assert_that(&path, is_not(existing_dir()));
+    }
 
-  fn path(path: Option<String>, default: &str) -> Path {
-    Path::new(path.unwrap_or(default.to_string()))
-  }
+    fn path(path: Option<String>, default: &str) -> Path {
+        Path::new(path.unwrap_or(default.to_string()))
+    }
 }
