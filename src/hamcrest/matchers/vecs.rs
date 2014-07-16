@@ -1,6 +1,6 @@
 use std::fmt::Show;
 use std::vec::Vec;
-use core::{Success, Failure, BaseMatcher, expect};
+use core::{Success, Failure, expect};
 use {
     Matcher,
     Match,
@@ -12,13 +12,11 @@ pub struct OfLen {
     len: uint
 }
 
-impl<T> BaseMatcher<Vec<T>> for OfLen {
-    fn description(&self) -> &'static str {
-        "of len"
-    }
-}
-
 impl<T> Matcher<Vec<T>> for OfLen {
+    fn describe(&self) -> String {
+        format!("a vec of len {}", self.len)
+    }
+
     fn matches(&self, actual: &Vec<T>) -> Match {
         let failure: String = mismatch(
             format!("it had {} elements", actual.len()),
@@ -45,13 +43,19 @@ impl<T> Contains<T> {
     }
 }
 
-impl<T: Show + PartialEq + Clone> BaseMatcher<Vec<T>> for Contains<T> {
-    fn description(&self) -> &'static str {
-        "contains"
-    }
-}
-
 impl<T : Show + PartialEq + Clone> Matcher<Vec<T>> for Contains<T> {
+    fn describe(&self) -> String {
+        let mut out = "contains ".to_string();
+
+        if self.exactly {
+            out.push_str("exactly ");
+        }
+
+        out.push_str(self.items.to_string().as_slice());
+
+        out
+    }
+
     fn matches(&self, actual: &Vec<T>) -> Match {
         let mut rem = actual.clone();
 

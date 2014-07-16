@@ -21,9 +21,9 @@ impl PathType {
     }
 }
 
-define_matcher!(ExistingPath for Path as "existing path" {
+pub struct ExistingPath {
     expected: PathType
-})
+}
 
 impl ExistingPath {
     fn match_path_type(&self, actual: &Path) -> Match {
@@ -42,8 +42,8 @@ impl Matcher<Path> for ExistingPath {
         self.match_path_type(actual)
     }
 
-    fn failure_message_when_negated(&self) -> String {
-        format!("Expected not {}", self.expected.describe())
+    fn describe(&self) -> String {
+        format!("file was {}", self.expected.describe())
     }
 }
 

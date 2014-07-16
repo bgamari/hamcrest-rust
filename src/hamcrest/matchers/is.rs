@@ -1,14 +1,8 @@
-use {Match, Matcher, BaseMatcher};
+use {Match, Matcher};
 use core::{Success, Failure};
 
 pub struct Is<M> {
     matcher: Box<M>
-}
-
-impl<T, M: Matcher<T>> BaseMatcher<T> for Is<M> {
-    fn description(&self) -> &'static str {
-        self.matcher.description()
-    }
 }
 
 impl<T, M: Matcher<T>> Matcher<T> for Is<M> {
@@ -16,8 +10,8 @@ impl<T, M: Matcher<T>> Matcher<T> for Is<M> {
         self.matcher.matches(actual)
     }
 
-    fn failure_message_when_negated(&self) -> String {
-        self.matcher.failure_message_when_negated()
+    fn describe(&self) -> String {
+        self.matcher.describe()
     }
 }
 
@@ -29,18 +23,16 @@ pub struct IsNot<M> {
     matcher: Box<M>
 }
 
-impl<T, M: Matcher<T>> BaseMatcher<T> for IsNot<M> {
-    fn description(&self) -> &'static str {
-        self.matcher.description()
-    }
-}
-
 impl<T, M: Matcher<T>> Matcher<T> for IsNot<M> {
     fn matches(&self, actual: &T) -> Match {
         match self.matcher.matches(actual) {
-            Success => Failure(self.matcher.failure_message_when_negated()),
+            Success => Failure(format!("Expected: {}", self.describe())),
             Failure(_) => Success
         }
+    }
+
+    fn describe(&self) -> String {
+        format!("not {}", self.matcher.describe())
     }
 
     fn failure_message_when_negated(&self) -> String {

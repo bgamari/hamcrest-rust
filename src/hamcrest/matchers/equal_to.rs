@@ -1,9 +1,9 @@
 use std::fmt::Show;
 use {Matcher, Match, expect};
 
-define_matcher!(EqualTo for T as "equal to" {
+pub struct EqualTo<T> {
     expected: T
-})
+}
 
 fn diff<T: Show, U: Show>(expected: &T, actual: &U) -> String {
     format!("Expected: {}\n     Got: {}", expected, actual)
@@ -14,8 +14,8 @@ impl<T : PartialEq + Show + 'static> Matcher<T> for EqualTo<T> {
         expect(self.expected.eq(actual), diff(&self.expected, actual))
     }
 
-    fn failure_message_when_negated(&self) -> String {
-        format!("Expected not: {}", self.expected)
+    fn describe(&self) -> String {
+        format!("equal to {}", self.expected)
     }
 }
 

@@ -11,7 +11,6 @@ pub use matchers::existing_path::{existing_path,existing_file,existing_dir};
 pub use matchers::vecs::{of_len,contains};
 
 pub use core::{
-    BaseMatcher,
     Matcher,
     Match,
     assert_that,

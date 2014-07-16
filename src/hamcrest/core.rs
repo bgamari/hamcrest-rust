@@ -23,24 +23,17 @@ pub fn mismatch<T: Show, U: Show>(actual: T, expected: U) -> String {
     format!("Expected: {}\n     Got: {}", expected, actual)
 }
 
-pub trait BaseMatcher<T> {
-    fn description(&self) -> &'static str;
-}
-
 pub enum Match {
     Success,
     Failure(String)
 }
 
-pub trait Matcher<T> : BaseMatcher<T> {
+pub trait Matcher<T> {
     fn matches(&self, actual: &T) -> Match;
+    fn describe(&self) -> String;
 
     fn failure_message_when_negated(&self) -> String {
-        format!("expected not: {}", self.describe())
-    }
-
-    fn describe(&self) -> String {
-        self.description().to_string()
+        format!("Expected: not {}", self.describe())
     }
 }
 
@@ -51,40 +44,3 @@ pub fn expect(expect: bool, failure: String) -> Match {
         Failure(failure)
     }
 }
-
-
-macro_rules! define_matcher(
-    ($name:ident for T as $desc:expr { $($field:ident : $ty:ty),+ }) => (
-        pub struct $name<T> {
-            $($field : $ty),+
-        }
-
-        impl<T> ::core::BaseMatcher<T> for $name<T> {
-            fn description(&self) -> &'static str {
-                $desc
-            }
-        }
-    );
-
-    ($name:ident for $actual:ty $(from $original:ident)* as $desc:expr { $($field:ident : $ty:ty),+ }) => (
-        pub struct $name {
-            $($field : $ty),+
-        }
-
-        impl ::core::BaseMatcher<$actual> for $name {
-            fn description(&self) -> &'static str {
-                $desc
-            }
-        }
-    );
-
-    ($name:ident for T as $desc:expr) => (
-        pub struct $name<T>;
-
-        impl<T> ::core::BaseMatcher<T> for $name<T> {
-            fn description(&self) -> &'static str {
-                $desc
-            }
-        }
-    );
-)
